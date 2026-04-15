@@ -3,7 +3,8 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
 export default defineConfig({
-  site: 'https://docs.getsmarterfiles.com',
+  site: 'https://tucario.github.io',
+  base: '/SMF-Docs',
   output: 'static',
   integrations: [
     starlight({
