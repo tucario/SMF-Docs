@@ -3,22 +3,47 @@ title: ビューとソート
 description: Smarter Filesのリストビュー、タイルビュー、ソートオプション。
 ---
 
-## リストビューとタイルビュー
+import { Image } from 'astro:assets';
+import listView from '../../../../assets/screenshots/list-view.png';
+import tileView from '../../../../assets/screenshots/tile-view.png';
+import sortMenu from '../../../../assets/screenshots/sort-menu.png';
+import emptyState from '../../../../assets/screenshots/empty-state.png';
 
-コンパクトなリストビューとビジュアルなタイルビューを切り替えられます。コンポーネントはユーザーが選択したビューを記憶します。
+## リストビュー
 
-![リストビュー](/docs/list-view.png)
+デフォルトのレイアウト — ファイル名、ファイルタイプアイコン、最終更新日、サイズ、オーナー、カテゴリバッジ（割り当てられている場合）、プライベートファイルのプライバシーロックアイコンを縦並びの行で表示します。各行にはファイル固有のアクションを表示するコンテキストメニューボタンがあります。
 
-![タイルビュー](/docs/tile-view.png)
+<Image src={listView} alt="2件のファイルとDownload All Filesリンクが表示されたSmarter Filesのリストビュー" />
 
-デフォルトのビューは、管理者がコンポーネントプロパティ（`Display Mode`）で設定できます。
+## タイルビュー
+
+ファイルタイプアイコンが目立つカードのグリッドです。画像が多いレコードや、メタデータを読むよりも一目でスキャンすることが重要な場合に便利です。
+
+<Image src={tileView} alt="ファイルがレスポンシブなカードのグリッドで表示されたSmarter Filesのタイルビュー" />
+
+## ビューの切り替え
+
+管理者はApp Builderの **Display Mode** デザインプロパティ（`List` または `Tiles`）で**デフォルト**のビューを設定します。ユーザーは実行時にビューを切り替えることができ、そのレコードページでの選択が記憶されます。
 
 ## ソート
 
-ファイルは以下の基準でソートできます：
+ソートドロップダウンで利用可能な6つのソートオプション：
 
-- **日付（新しい順 / 古い順）** — 最終更新日順
-- **サイズ（大きい順 / 小さい順）** — ファイルサイズ順
-- **名前（A-Z / Z-A）** — アルファベット順
+| オプション | ソート基準 |
+|---|---|
+| 日付（新しい順） | `LastModifiedDate` 降順 — デフォルト |
+| 日付（古い順） | `LastModifiedDate` 昇順 |
+| サイズ（大きい順） | `ContentSize` 降順 |
+| サイズ（小さい順） | `ContentSize` 昇順 |
+| 名前（A〜Z） | `Title` アルファベット順 |
+| 名前（Z〜A） | `Title` 逆アルファベット順 |
 
-デフォルトのソート順は、Lightning App Builderの`Default Sort Order`プロパティで設定できます。ユーザーはソートドロップダウンを使用して、実行時にソート順を変更できます。
+<Image src={sortMenu} alt="6つのソートオプションが表示されたソートドロップダウン" />
+
+管理者は **Default Sort Order** デザインプロパティで**デフォルト**を設定します。ユーザーは実行時に変更できます — 選択内容はセッション中そのレコードページで保持されます。
+
+## 空の状態
+
+レコードにファイルがない場合（または表示フィルタリング後にユーザーが閲覧できるファイルがない場合）、コンポーネントはアップロード機能が引き続き表示されたすっきりした空の状態を表示します。
+
+<Image src={emptyState} alt="アップロードプロンプトが表示されたSmarter Filesの空の状態" />

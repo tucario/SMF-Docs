@@ -1,43 +1,53 @@
 ---
 title: Instalação
-description: Como instalar o Smarter Files na sua org Salesforce.
+description: Como instalar o Smarter Files na sua organização Salesforce.
 ---
+
+import { Image } from 'astro:assets';
+import packageInstaller from '../../../../assets/screenshots/package-installer.png';
+import permSets from '../../../../assets/screenshots/permission-sets-deployed.png';
+
+## Edição AppExchange (Pacote Gerenciado)
+
+1. Abra o link de instalação fornecido pelo seu contato de vendas da Tucario (ou pela listagem no AppExchange).
+2. Escolha **Install for All Users**, **Install for Admins Only** ou **Install for Specific Profiles** conforme a forma desejada de controle de acesso.
+3. Aprove as solicitações de acesso de terceiros e aguarde a conclusão da instalação.
+
+<Image src={packageInstaller} alt="Instalador de pacotes Salesforce para o Smarter Files" />
 
 ## Edição Gratuita (GitHub)
 
 1. Clone ou baixe o repositório do [GitHub](https://github.com/tucario/SalesforceSmarterFiles).
-2. Implante na sua org Salesforce usando Salesforce CLI:
+2. Implante na sua organização Salesforce usando o Salesforce CLI:
 
 ```bash
-sf project deploy start --source-dir force-app
+sf project deploy start --source-dir src
 ```
 
-3. Navegue até uma página de registro no Lightning App Builder e arraste o componente **Smarter Files** para o layout.
+## Atribuir Permission Sets
 
-### Deploy com Um Clique (Alternativa)
+O Smarter Files inclui três permission sets. Todo usuário que interage com o componente precisa, no mínimo, do conjunto base.
 
-Você também pode usar a ferramenta de deploy do GitHub para instalar diretamente na sua org:
+<Image src={permSets} alt="Permission sets do Smarter Files no Setup" />
 
-1. Escolha seu ambiente (Production ou Sandbox):
+| Permission Set | Necessário para | Concede |
+|---|---|---|
+| **Tucario Files (Base)** | Todos os usuários do componente | Acesso ao aplicativo, CRUD no objeto de junção de visibilidade, acesso aos controladores de arquivos |
+| **Tucario - Manage File Categories** | Administradores e responsáveis por categorias | Permissão customizada `Tucario_Manage_Categories` — atribuir categorias a arquivos e ignorar a filtragem por categoria |
+| **Tucario - View Private Documents** | Administradores, RH, conformidade | Permissão customizada `Tucario_View_Private_Documents` — visualizar arquivos marcados como privados por outros usuários |
 
-![Configurações da ferramenta de deploy](/docs/deploy-tool-settings.png)
+Atribua via **Setup → Permission Sets → [nome] → Manage Assignments**.
 
-2. Permita o acesso à sua org Salesforce:
+## Adicionar o Componente a uma Página de Registro
 
-![Prompt de permissão de acesso](/docs/deploy-allow-access.png)
-
-3. Confirme os componentes a serem implantados:
-
-![Confirmação de deploy](/docs/deploy-tool-confirmation.png)
-
-## Edição AppExchange
-
-1. Instale a partir do AppExchange (em breve).
-2. Coloque o componente **Smarter Files** em qualquer página de registro usando o Lightning App Builder.
-3. Configure as regras de visibilidade no painel de configurações do componente.
+1. Abra qualquer página de registro no **Lightning App Builder**.
+2. Arraste o componente **Smarter Files** da paleta de componentes para o layout.
+3. Configure as propriedades de design no painel à direita — consulte [Configuração do Componente](/configuration/component-setup/) para a referência completa de propriedades.
+4. Salve e ative a página.
 
 ## Requisitos
 
-- Salesforce edição **Enterprise**, **Professional** ou **Unlimited**.
+- Edição Salesforce **Enterprise**, **Professional** ou **Unlimited**.
 - Lightning Experience habilitado.
-- Licença Platform é suficiente — não é necessária uma licença Salesforce completa.
+- Licenças Platform Starter / Platform Plus são suportadas — não é necessária uma licença completa do Salesforce.
+- Para geração de Links Públicos: **Content Deliveries and Public Links** deve estar habilitado (Setup → Salesforce Files).

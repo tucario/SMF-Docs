@@ -1,21 +1,26 @@
 ---
 title: Visibility Controls
-description: Document visibility controls available in the AppExchange Edition.
+description: Document categories, role-based filtering, and private documents in Smarter Files.
 ---
 
+import { Image } from 'astro:assets';
+import setCategory from '../../../assets/screenshots/set-category-modal.png';
+import wizardDefine from '../../../assets/screenshots/wizard-define-types.png';
+import wizardDefineMultiple from '../../../assets/screenshots/wizard-define-types-multiple.png';
+import wizardRoles from '../../../assets/screenshots/wizard-assign-roles.png';
+import wizardReview from '../../../assets/screenshots/wizard-review-deploy.png';
+import wizardWelcome from '../../../assets/screenshots/wizard-welcome.png';
+import wizardHome from '../../../assets/screenshots/wizard-home.png';
+
 :::note
-This feature is available in the **AppExchange Edition** only and requires the component's **Storage Mode** to be set to **Isolated**.
+Available in **AppExchange Edition** only. The component's **Storage Mode** must be set to **Isolated** for visibility controls to apply.
 :::
 
 ## Overview
 
-Visibility controls allow administrators to restrict file access based on document categories and user roles. Files can be assigned to categories, and each category can be locked down to specific roles — users outside those roles won't see the files. Additionally, any user can mark a file as private, making it visible only to themselves and authorized viewers.
-
-All filtering is performed **server-side** — files a user cannot access are never sent to the browser.
+Visibility controls let admins restrict file access by **document category** (mapped to roles in the Salesforce role hierarchy) and let any user mark individual files as **private**. All filtering happens **server-side** in `getFilesList()` — restricted files never reach unauthorized browsers.
 
 ## Storage Mode Requirement
-
-Visibility controls are only available when the component's **Storage Mode** is set to **Isolated**:
 
 | | Standard | Isolated |
 |---|---|---|
@@ -24,117 +29,111 @@ Visibility controls are only available when the component's **Storage Mode** is 
 | Mark as Private | Not available | Available |
 | Role-based visibility filtering | Not available | Available |
 
-In Isolated mode, files are linked to the record exclusively through a junction record — they do not appear in the standard Salesforce Files related list.
+In Standard mode no junction record is created, so there's nowhere to store the category or private flag. Switch to Isolated for any record where visibility filtering matters. See [Storage Modes](/features/storage-modes/).
 
 ## Document Categories
 
-### What Are Categories?
+A category is a label assigned to a file that determines who can see it. Categories live in `Tucario_Visibility_Rule__mdt` records and are managed through the Configuration Wizard.
 
-A category is a label assigned to a file that determines who can see it. Categories are defined by an administrator through the **Configuration Wizard** and stored as Custom Metadata Type records.
+Common examples: *HR Documents*, *Underwriting Documents*, *Financial Reports*, *Legal Contracts*, *Medical Records*.
 
-Examples:
-- Health Records
-- Financial Reports
-- Legal Contracts
-- Internal Memos
+### How Filtering Works
 
-### How Category Filtering Works
+Each rule maps a category to a list of permitted role `DeveloperName` values. For each file:
 
-Each category has a list of **permitted roles**. When a file has a category assigned:
+- File has **no category** → visible to everyone (default open).
+- File has a category, **user's role is on the permitted list** → visible.
+- File has a category, **user's role is not permitted** → hidden.
+- File has a category, **rule is inactive** (`Is_Active = false`) → visible to everyone (deactivated rules don't filter).
+- User has the **Manage Categories** custom permission → bypass category filtering (always sees every file).
 
-- If the user's role is on the permitted list → file is **visible**
-- If the user's role is NOT on the permitted list → file is **hidden**
-- If no roles are assigned to a category → file is visible to **everyone**
-- If a file has no category → file is visible to **everyone**
+Multiple rules referencing the same category combine with **OR** logic — a user passes if their role is on *any* permitted list for the category.
 
-### Assigning Categories to Files
+### Assigning a Category to a File
 
-Users with the **Tucario - Manage File Categories** permission set can assign categories:
+Users with **Manage Categories** can assign a category from the file's context menu:
 
-1. Click the action menu on a file.
-2. Select **Set Category**.
-3. Choose a category from the picker, or select **No Category** to remove the current assignment.
+1. Open the file's context menu and select **Set Category**.
+2. Pick a category from the picker, or select **No Category** to clear.
+3. The file's visibility updates immediately.
 
-The file's visibility updates immediately.
+<Image src={setCategory} alt="Set Category modal with the category picker open" />
 
-<video controls playsinline style="width:100%; border-radius:8px;">
-  <source src="/docs/assigning-categories-to-files.mp4" type="video/mp4" />
-</video>
+:::caution
+Users *without* the Manage Categories permission still see the **Set Category** option, but get a confirmation warning that the file may disappear from their own view once a restricted category is applied (since they don't bypass filtering).
+:::
 
-### Managing Categories
+## Configuring Visibility Rules
 
-Categories are managed through the **Configuration Wizard** in the Smarter Files app:
+Open the **Smarter Files by Tucario** app from the App Launcher. The Configuration Wizard opens on the home screen with two cards: *Manage Document Categories* and *Private Documents*.
 
-1. Open the **Smarter Files by Tucario** app from the App Launcher.
-2. Click **Manage Document Categories**.
-3. **Step 1 — Document Types**: Add categories with names and optional descriptions.
-4. **Step 2 — Assign Roles**: For each category, select which roles can see files in that category.
-5. **Step 3 — Review & Deploy**: Review the configuration and click Deploy.
+<Image src={wizardWelcome} alt="Configuration Wizard welcome screen" />
 
-<video controls playsinline style="width:100%; border-radius:8px;">
-  <source src="/docs/add-category.mp4" type="video/mp4" />
-</video>
+<Image src={wizardHome} alt="Configuration Wizard home with Manage Categories and Private Documents cards" />
+
+Click **Manage Document Categories** to enter the 3-step rule wizard.
+
+### Step 1 — Define Document Types
+
+Add the document types you want to control. Each has a name and an optional description.
+
+<Image src={wizardDefine} alt="Wizard step 1: defining a document type called Underwriting Documents" />
+
+<Image src={wizardDefineMultiple} alt="Wizard step 1 with multiple document types added" />
+
+### Step 2 — Assign Roles
+
+For each document type, pick the roles allowed to see files in that category. The dual-listbox is populated from your org's role hierarchy (capped at 1000 roles).
+
+<Image src={wizardRoles} alt="Wizard step 2: dual listbox with available roles on the left and permitted roles on the right" />
+
+### Step 3 — Review & Deploy
+
+Review active and deactivated categories, then click **Deploy Configuration**. The wizard calls `Metadata.Operations.enqueueDeployment()` to write the rules as `Tucario_Visibility_Rule__mdt` records asynchronously, polling for completion. A spinner shows progress.
+
+<Image src={wizardReview} alt="Wizard step 3: review of all categories with the Deploy button" />
 
 :::note
-**Removing a category:** When you remove a document type from the wizard and deploy, the underlying Custom Metadata Type record is not deleted — it is **deactivated** (`Is_Active = false`). Deactivated categories no longer appear in the category picker or filter files. This is because the Salesforce Metadata API does not support deleting Custom Metadata Type records from Apex.
+**Removing a category:** removing a document type from the wizard and deploying does **not** delete the CMT record — it sets `Is_Active = false`. The Salesforce Metadata API doesn't support deleting CMT records from Apex, so deactivation is the closest equivalent. Deactivated categories no longer appear in the picker or filter files, and can be reactivated later by adding a category with the same name back.
 :::
 
 ## Private Documents
 
-### Marking Files as Private
-
-Any user can mark a file as private in Isolated mode:
-
-1. Click the action menu on a file.
-2. Select **Mark as Private**.
-3. A lock icon appears next to the file name.
-
-<video controls playsinline style="width:100%; border-radius:8px;">
-  <source src="/docs/make-file-private.mp4" type="video/mp4" />
-</video>
-
-The file is now visible only to:
-- The user who marked it private (the owner)
-- Users with the **Tucario - View Private Documents** permission set
-
-### Removing Private Status
-
-The file owner can remove the private flag:
-
-1. Click the action menu on the private file.
-2. Select **Remove Private**.
-3. The file returns to normal visibility rules.
+In addition to category-based filtering, any user can mark individual files as private — visible only to themselves and users with the **View Private Documents** permission. See [Private Documents](/features/private-documents/) for the full flow.
 
 ## Combined Filtering Logic
 
-When a file has both a category and a private flag, **both checks must pass** for the file to be visible:
+When a file has both a category and a private flag, **both checks must pass** for it to be visible. Pseudocode for `getFilesList()`:
 
 ```
-For each file:
+For each file on the record:
   1. Private check:
-     If file is private AND user is not the owner
-     AND user lacks "View Private Documents" permission → HIDE
+     If Is_Private AND user is not Owner_Id
+     AND user lacks "View Private Documents" → HIDE
 
   2. Category check:
-     If file has a category with permitted roles
-     AND user's role is not in the list
-     AND user lacks "Manage Categories" permission → HIDE
+     If Visibility_Category is set
+     AND a matching active rule exists
+     AND user's role is not in Permitted_Roles
+     AND user lacks "Manage Categories" → HIDE
 
   3. Otherwise → SHOW
 ```
+
+The most restrictive of the two checks wins.
 
 ## Permission Sets
 
 | Permission Set | Purpose |
 |---|---|
-| **Tucario Files** | Base access. Grants access to the app, controllers, and junction object. Assign to all users. |
-| **Tucario - Manage File Categories** | Allows assigning categories to files. **Bypasses category filtering** — users with this permission see all files regardless of category. |
-| **Tucario - View Private Documents** | Allows viewing files marked private by other users. |
+| **Tucario Files** | Base access. Required for every user. Grants the app, controllers, and junction object. |
+| **Tucario - Manage File Categories** | Set Category menu access + bypass category filtering (always see every file). |
+| **Tucario - View Private Documents** | See files marked private by other users. |
 
 ## Use Cases
 
-- **Health records** visible only to HR managers and medical staff.
-- **Financial reports** restricted to the finance team.
-- **Legal contracts** accessible only to legal department roles.
-- **Sensitive attachments** marked private by individual users for personal use.
-- **Draft documents** hidden from external-facing roles until ready.
+- **HR documents** visible only to HR roles, with private flagging for individual employee records.
+- **Financial reports** restricted to finance roles, regardless of who uploaded them.
+- **Legal contracts** locked to legal department roles, with private flagging on draft contracts.
+- **Underwriting documents** containing PII, restricted to underwriter roles.
+- **Confidential attachments on a shared record** — second component instance in Isolated mode with categories applied, hidden from the standard Files related list entirely.

@@ -1,21 +1,26 @@
 ---
 title: Kontrola widoczności
-description: Kontrole widoczności dokumentów dostępne w edycji AppExchange.
+description: Kategorie dokumentów, filtrowanie oparte na rolach i dokumenty prywatne w Smarter Files.
 ---
 
+import { Image } from 'astro:assets';
+import setCategory from '../../../../assets/screenshots/set-category-modal.png';
+import wizardDefine from '../../../../assets/screenshots/wizard-define-types.png';
+import wizardDefineMultiple from '../../../../assets/screenshots/wizard-define-types-multiple.png';
+import wizardRoles from '../../../../assets/screenshots/wizard-assign-roles.png';
+import wizardReview from '../../../../assets/screenshots/wizard-review-deploy.png';
+import wizardWelcome from '../../../../assets/screenshots/wizard-welcome.png';
+import wizardHome from '../../../../assets/screenshots/wizard-home.png';
+
 :::note
-Ta funkcja jest dostępna wyłącznie w **edycji AppExchange** i wymaga ustawienia **Storage Mode** komponentu na **Isolated**.
+Dostępne wyłącznie w **edycji AppExchange**. **Storage Mode** komponentu musi być ustawiony na **Isolated**, aby kontrole widoczności były stosowane.
 :::
 
 ## Przegląd
 
-Kontrole widoczności pozwalają administratorom ograniczać dostęp do plików na podstawie kategorii dokumentów i ról użytkowników. Pliki mogą być przypisywane do kategorii, a każda kategoria może być ograniczona do określonych ról -- użytkownicy spoza tych ról nie widzą plików. Dodatkowo każdy użytkownik może oznaczyć plik jako prywatny, dzięki czemu jest on widoczny tylko dla niego samego i upoważnionych osób.
-
-Całe filtrowanie odbywa się **po stronie serwera** -- pliki, do których użytkownik nie ma dostępu, nigdy nie są przesyłane do przeglądarki.
+Kontrole widoczności pozwalają administratorom ograniczać dostęp do plików według **kategorii dokumentu** (przypisanej do ról w hierarchii ról Salesforce) oraz umożliwiają każdemu użytkownikowi oznaczanie poszczególnych plików jako **prywatne**. Całe filtrowanie odbywa się **po stronie serwera** w metodzie `getFilesList()` — pliki z ograniczonym dostępem nigdy nie trafiają do nieuprawnionych przeglądarek.
 
 ## Wymaganie trybu przechowywania
-
-Kontrole widoczności są dostępne tylko wtedy, gdy **Storage Mode** komponentu jest ustawiony na **Isolated**:
 
 | | Standard | Isolated |
 |---|---|---|
@@ -24,117 +29,111 @@ Kontrole widoczności są dostępne tylko wtedy, gdy **Storage Mode** komponentu
 | Oznaczanie jako prywatne | Niedostępne | Dostępne |
 | Filtrowanie widoczności oparte na rolach | Niedostępne | Dostępne |
 
-W trybie Isolated pliki są powiązane z rekordem wyłącznie poprzez rekord połączeniowy -- nie pojawiają się na standardowej liście powiązanej Files w Salesforce.
+W trybie Standard nie jest tworzony żaden rekord łącznikowy, więc nie ma gdzie przechowywać kategorii ani flagi prywatności. Przełącz na Isolated dla każdego rekordu, w którym filtrowanie widoczności ma znaczenie. Zobacz [Storage Modes](/features/storage-modes/).
 
 ## Kategorie dokumentów
 
-### Czym są kategorie?
+Kategoria to etykieta przypisana do pliku, która określa, kto może go zobaczyć. Kategorie są przechowywane jako rekordy `Tucario_Visibility_Rule__mdt` i zarządzane przez Configuration Wizard.
 
-Kategoria to etykieta przypisana do pliku, która określa, kto może go widzieć. Kategorie są definiowane przez administratora za pomocą **Configuration Wizard** i przechowywane jako rekordy Custom Metadata Type.
+Typowe przykłady: *Dokumenty HR*, *Dokumenty underwritingu*, *Raporty finansowe*, *Umowy prawne*, *Dokumentacja medyczna*.
 
-Przykłady:
-- Dokumentacja medyczna
-- Raporty finansowe
-- Umowy prawne
-- Notatki wewnętrzne
+### Jak działa filtrowanie
 
-### Jak działa filtrowanie kategorii
+Każda reguła przypisuje kategorię do listy dozwolonych wartości `DeveloperName` ról. Dla każdego pliku:
 
-Każda kategoria posiada listę **dozwolonych ról**. Gdy plik ma przypisaną kategorię:
+- Plik **nie ma kategorii** → widoczny dla wszystkich (domyślnie otwarty).
+- Plik ma kategorię, **rola użytkownika jest na liście dozwolonych** → widoczny.
+- Plik ma kategorię, **rola użytkownika nie jest dozwolona** → ukryty.
+- Plik ma kategorię, **reguła jest nieaktywna** (`Is_Active = false`) → widoczny dla wszystkich (zdezaktywowane reguły nie filtrują).
+- Użytkownik posiada uprawnienie niestandardowe **Manage Categories** → pomija filtrowanie kategorii (zawsze widzi wszystkie pliki).
 
-- Jeśli rola użytkownika jest na liście dozwolonych -- plik jest **widoczny**
-- Jeśli rola użytkownika NIE jest na liście dozwolonych -- plik jest **ukryty**
-- Jeśli do kategorii nie przypisano żadnych ról -- plik jest widoczny dla **wszystkich**
-- Jeśli plik nie ma kategorii -- plik jest widoczny dla **wszystkich**
+Wiele reguł odwołujących się do tej samej kategorii łączy się logiką **LUB** — użytkownik przechodzi filtr, jeśli jego rola figuruje na *jakiejkolwiek* liście dozwolonych dla tej kategorii.
 
-### Przypisywanie kategorii do plików
+### Przypisywanie kategorii do pliku
 
-Użytkownicy z zestawem uprawnień **Tucario - Manage File Categories** mogą przypisywać kategorie:
+Użytkownicy z uprawnieniem **Manage Categories** mogą przypisać kategorię z menu kontekstowego pliku:
 
-1. Kliknij menu akcji na pliku.
-2. Wybierz **Set Category**.
-3. Wybierz kategorię z selektora lub wybierz **No Category**, aby usunąć bieżące przypisanie.
+1. Otwórz menu kontekstowe pliku i wybierz **Set Category**.
+2. Wybierz kategorię z selektora lub wybierz **No Category**, aby usunąć przypisanie.
+3. Widoczność pliku aktualizuje się natychmiast.
 
-Widoczność pliku aktualizuje się natychmiast.
+<Image src={setCategory} alt="Okno modalne Set Category z otwartym selektorem kategorii" />
 
-<video controls playsinline style="width:100%; border-radius:8px;">
-  <source src="/docs/assigning-categories-to-files.mp4" type="video/mp4" />
-</video>
+:::caution
+Użytkownicy *bez* uprawnienia Manage Categories nadal widzą opcję **Set Category**, ale otrzymują ostrzeżenie z potwierdzeniem, że plik może zniknąć z ich własnego widoku po zastosowaniu kategorii z ograniczonym dostępem (ponieważ nie pomijają filtrowania).
+:::
 
-### Zarządzanie kategoriami
+## Konfiguracja reguł widoczności
 
-Kategorie są zarządzane za pomocą **Configuration Wizard** w aplikacji Smarter Files:
+Otwórz aplikację **Smarter Files by Tucario** z App Launchera. Configuration Wizard otwiera się na ekranie głównym z dwiema kartami: *Manage Document Categories* i *Private Documents*.
 
-1. Otwórz aplikację **Smarter Files by Tucario** z App Launcher.
-2. Kliknij **Manage Document Categories**.
-3. **Krok 1 -- Typy dokumentów**: Dodaj kategorie z nazwami i opcjonalnymi opisami.
-4. **Krok 2 -- Przypisz role**: Dla każdej kategorii wybierz, które role mogą widzieć pliki w tej kategorii.
-5. **Krok 3 -- Przejrzyj i wdróż**: Przejrzyj konfigurację i kliknij Deploy.
+<Image src={wizardWelcome} alt="Ekran powitalny Configuration Wizard" />
 
-<video controls playsinline style="width:100%; border-radius:8px;">
-  <source src="/docs/add-category.mp4" type="video/mp4" />
-</video>
+<Image src={wizardHome} alt="Strona główna Configuration Wizard z kartami Manage Categories i Private Documents" />
+
+Kliknij **Manage Document Categories**, aby wejść do 3-krokowego kreatora reguł.
+
+### Krok 1 — Definiowanie typów dokumentów
+
+Dodaj typy dokumentów, którymi chcesz zarządzać. Każdy z nich ma nazwę i opcjonalny opis.
+
+<Image src={wizardDefine} alt="Krok 1 kreatora: definiowanie typu dokumentu o nazwie Underwriting Documents" />
+
+<Image src={wizardDefineMultiple} alt="Krok 1 kreatora z wieloma dodanymi typami dokumentów" />
+
+### Krok 2 — Przypisywanie ról
+
+Dla każdego typu dokumentu wybierz role, które mogą zobaczyć pliki w tej kategorii. Podwójna lista wyboru jest wypełniana z hierarchii ról organizacji (maksymalnie 1000 ról).
+
+<Image src={wizardRoles} alt="Krok 2 kreatora: podwójna lista wyboru z dostępnymi rolami po lewej i dozwolonymi rolami po prawej" />
+
+### Krok 3 — Przegląd i wdrożenie
+
+Przejrzyj aktywne i zdezaktywowane kategorie, a następnie kliknij **Deploy Configuration**. Kreator wywołuje metodę `Metadata.Operations.enqueueDeployment()`, aby asynchronicznie zapisać reguły jako rekordy `Tucario_Visibility_Rule__mdt`, monitorując postęp wdrożenia. W trakcie operacji wyświetlany jest wskaźnik postępu.
+
+<Image src={wizardReview} alt="Krok 3 kreatora: przegląd wszystkich kategorii z przyciskiem Deploy" />
 
 :::note
-**Usuwanie kategorii:** Gdy usuniesz typ dokumentu z kreatora i wdrożysz, bazowy rekord Custom Metadata Type nie jest kasowany -- jest **dezaktywowany** (`Is_Active = false`). Dezaktywowane kategorie nie pojawiają się już w selektorze kategorii ani nie filtrują plików. Wynika to z faktu, że Salesforce Metadata API nie obsługuje usuwania rekordów Custom Metadata Type z poziomu Apex.
+**Usuwanie kategorii:** usunięcie typu dokumentu z kreatora i wdrożenie **nie powoduje** usunięcia rekordu CMT — ustawia jego wartość `Is_Active = false`. Salesforce Metadata API nie obsługuje usuwania rekordów CMT z poziomu Apex, więc dezaktywacja jest najbliższym odpowiednikiem. Zdezaktywowane kategorie nie pojawiają się już w selektorze ani nie filtrują plików; można je ponownie aktywować, dodając kategorię o tej samej nazwie.
 :::
 
 ## Dokumenty prywatne
 
-### Oznaczanie plików jako prywatnych
-
-Każdy użytkownik może oznaczyć plik jako prywatny w trybie Isolated:
-
-1. Kliknij menu akcji na pliku.
-2. Wybierz **Mark as Private**.
-3. Obok nazwy pliku pojawi się ikona kłódki.
-
-<video controls playsinline style="width:100%; border-radius:8px;">
-  <source src="/docs/make-file-private.mp4" type="video/mp4" />
-</video>
-
-Plik jest teraz widoczny tylko dla:
-- Użytkownika, który oznaczył go jako prywatny (właściciel)
-- Użytkowników z zestawem uprawnień **Tucario - View Private Documents**
-
-### Usuwanie statusu prywatnego
-
-Właściciel pliku może usunąć flagę prywatności:
-
-1. Kliknij menu akcji na prywatnym pliku.
-2. Wybierz **Remove Private**.
-3. Plik wraca do normalnych reguł widoczności.
+Oprócz filtrowania opartego na kategoriach każdy użytkownik może oznaczyć poszczególne pliki jako prywatne — widoczne wyłącznie dla niego samego i użytkowników z uprawnieniem **View Private Documents**. Pełny opis przepływu znajdziesz w sekcji [Dokumenty prywatne](/features/private-documents/).
 
 ## Logika połączonego filtrowania
 
-Gdy plik ma zarówno kategorię, jak i flagę prywatności, **oba sprawdzenia muszą zostać spełnione**, aby plik był widoczny:
+Gdy plik ma zarówno kategorię, jak i flagę prywatności, **oba warunki muszą być spełnione**, aby plik był widoczny. Pseudokod metody `getFilesList()`:
 
 ```
-For each file:
+For each file on the record:
   1. Private check:
-     If file is private AND user is not the owner
-     AND user lacks "View Private Documents" permission → HIDE
+     If Is_Private AND user is not Owner_Id
+     AND user lacks "View Private Documents" → HIDE
 
   2. Category check:
-     If file has a category with permitted roles
-     AND user's role is not in the list
-     AND user lacks "Manage Categories" permission → HIDE
+     If Visibility_Category is set
+     AND a matching active rule exists
+     AND user's role is not in Permitted_Roles
+     AND user lacks "Manage Categories" → HIDE
 
   3. Otherwise → SHOW
 ```
+
+Wygrywa bardziej restrykcyjny z obu warunków.
 
 ## Zestawy uprawnień
 
 | Zestaw uprawnień | Przeznaczenie |
 |---|---|
-| **Tucario Files** | Podstawowy dostęp. Zapewnia dostęp do aplikacji, kontrolerów i obiektu połączeniowego. Przypisz wszystkim użytkownikom. |
-| **Tucario - Manage File Categories** | Umożliwia przypisywanie kategorii do plików. **Pomija filtrowanie kategorii** -- użytkownicy z tym uprawnieniem widzą wszystkie pliki niezależnie od kategorii. |
-| **Tucario - View Private Documents** | Umożliwia wyświetlanie plików oznaczonych jako prywatne przez innych użytkowników. |
+| **Tucario Files** | Podstawowy dostęp. Wymagany dla każdego użytkownika. Przyznaje dostęp do aplikacji, kontrolerów i obiektu łącznikowego. |
+| **Tucario - Manage File Categories** | Dostęp do menu Set Category oraz pomijanie filtrowania kategorii (zawsze wyświetla wszystkie pliki). |
+| **Tucario - View Private Documents** | Wyświetlanie plików oznaczonych jako prywatne przez innych użytkowników. |
 
 ## Przypadki użycia
 
-- **Dokumentacja medyczna** widoczna tylko dla kierowników HR i personelu medycznego.
-- **Raporty finansowe** ograniczone do zespołu finansowego.
-- **Umowy prawne** dostępne tylko dla ról w dziale prawnym.
-- **Wrażliwe załączniki** oznaczone jako prywatne przez poszczególnych użytkowników do użytku osobistego.
-- **Wersje robocze dokumentów** ukryte przed rolami zewnętrznymi do momentu gotowości.
+- **Dokumenty HR** widoczne wyłącznie dla ról HR, z oznaczaniem jako prywatne dla akt poszczególnych pracowników.
+- **Raporty finansowe** ograniczone do ról finansowych, niezależnie od tego, kto je przesłał.
+- **Umowy prawne** dostępne wyłącznie dla ról w dziale prawnym, z oznaczaniem jako prywatne dla wersji roboczych umów.
+- **Dokumenty underwritingu** zawierające dane osobowe (PII), ograniczone do ról underwriterów.
+- **Poufne załączniki do współdzielonego rekordu** — druga instancja komponentu w trybie Isolated z zastosowanymi kategoriami, całkowicie ukryta ze standardowej listy powiązanej Files.

@@ -1,44 +1,57 @@
 ---
 title: Documentos Privados
-description: Marque arquivos como privados para restringir o acesso ao proprietário do arquivo.
+description: Marque arquivos como privados para restringir o acesso ao proprietário do arquivo e a visualizadores autorizados.
 ---
 
+import { Image } from 'astro:assets';
+import markPrivate from '../../../../assets/screenshots/mark-as-private.png';
+
 :::note
-Esta funcionalidade está disponível apenas na **Edição AppExchange** e requer o modo de armazenamento **Isolated**.
+Disponível apenas na **Edição AppExchange**. Requer o modo de armazenamento **Isolated** na instância do componente.
 :::
 
 ## Visão Geral
 
-Qualquer usuário pode marcar um arquivo como privado, tornando-o visível apenas para si mesmo e para usuários com a permissão **View Private Documents**. Arquivos privados exibem um ícone de cadeado para indicar seu status restrito.
+Qualquer usuário pode marcar um arquivo como privado. Um arquivo privado é visível apenas para:
+
+1. **O usuário que o marcou como privado** (registrado em `Owner_Id__c` na junção de visibilidade).
+2. **Usuários com a custom permission `Tucario_View_Private_Documents`** — normalmente atribuída a administradores, RH ou conformidade via o permission set **Tucario - View Private Documents**.
+
+Arquivos privados exibem um ícone de cadeado ao lado do nome do arquivo nas visualizações em Lista e em Tiles.
 
 ## Marcando um Arquivo como Privado
 
-1. Clique no menu de ações de um arquivo.
+1. Abra o menu de contexto do arquivo.
 2. Selecione **Mark as Private**.
-3. Um ícone de cadeado aparece ao lado do nome do arquivo.
+3. Um ícone de cadeado aparece ao lado do nome do arquivo; o arquivo agora está oculto para todos, exceto para o proprietário e para os usuários com permissão View Private.
 
-<video controls playsinline style="width:100%; border-radius:8px;">
-  <source src="/docs/make-file-private.mp4" type="video/mp4" />
-</video>
+<Image src={markPrivate} alt="Arquivo marcado como privado com ícone de cadeado visível na lista de arquivos" />
 
-O arquivo agora é visível apenas para:
-- O usuário que o marcou como privado (o proprietário)
-- Usuários com o permission set **Tucario - View Private Documents**
+## Removendo o Sinalizador de Privado
 
-## Removendo o Status de Privado
+O proprietário (e qualquer usuário com `View Private Documents`) pode remover o sinalizador:
 
-O proprietário do arquivo pode remover o sinalizador de privado:
-
-1. Clique no menu de ações do arquivo privado.
+1. Abra o menu de contexto do arquivo privado.
 2. Selecione **Remove Private**.
-3. O arquivo retorna às regras normais de visibilidade.
+3. O ícone de cadeado desaparece e o arquivo volta às regras normais de visibilidade (incluindo quaisquer restrições de categoria).
 
-## Quem Pode Ver Arquivos Privados?
+## Quem Pode Ver um Arquivo Privado
 
 | Usuário | Pode ver o arquivo? |
 |---|---|
-| Proprietário do arquivo (quem o marcou como privado) | Sim |
+| O proprietário (quem o marcou como privado) | Sim |
 | Usuário com permissão **View Private Documents** | Sim |
-| Outros usuários | Não |
+| Todos os demais | Não — o arquivo é filtrado no lado do servidor e nunca aparece na lista, mesmo que o usuário já soubesse que ele existia |
 
-Se o arquivo também tiver uma categoria atribuída, tanto a verificação de privacidade quanto a verificação de categoria devem passar. Consulte [Controles de Visibilidade](/pt/features/visibility-controls/) para detalhes sobre a filtragem combinada.
+## Combinação com Categorias
+
+Privado e visibilidade baseada em categoria se acumulam — ambas as verificações devem passar para que um arquivo seja visível. Se um arquivo é privado **e** está atribuído a uma categoria exclusiva de RH, somente usuários que passarem *por ambos* os filtros (o proprietário com papel de RH, ou um usuário com View Private e papel de RH) poderão vê-lo. Consulte [Controles de Visibilidade](/features/visibility-controls/) para a lógica completa de filtragem.
+
+## Por Dentro do Funcionamento
+
+Ao marcar um arquivo como privado, o Smarter Files grava na junção `Tucario_File_Visibility__c`:
+
+- Define `Is_Private__c = true`.
+- Define `Owner_Id__c` como o usuário atual (aplicado pela validation rule `Owner_Required_When_Private` — `Owner_Id__c` não pode ser nulo quando `Is_Private__c` é verdadeiro).
+
+Toda a filtragem acontece no lado do servidor em `getFilesList()` antes de a resposta sair do servidor Salesforce, portanto arquivos privados nunca são enviados a navegadores não autorizados.
