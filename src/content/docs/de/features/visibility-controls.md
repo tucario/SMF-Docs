@@ -1,21 +1,26 @@
 ---
 title: Sichtbarkeitssteuerungen
-description: Dokument-Sichtbarkeitssteuerungen in der AppExchange Edition.
+description: Dokumentkategorien, rollenbasierte Filterung und private Dokumente in Smarter Files.
 ---
 
+import { Image } from 'astro:assets';
+import setCategory from '../../../../assets/screenshots/set-category-modal.png';
+import wizardDefine from '../../../../assets/screenshots/wizard-define-types.png';
+import wizardDefineMultiple from '../../../../assets/screenshots/wizard-define-types-multiple.png';
+import wizardRoles from '../../../../assets/screenshots/wizard-assign-roles.png';
+import wizardReview from '../../../../assets/screenshots/wizard-review-deploy.png';
+import wizardWelcome from '../../../../assets/screenshots/wizard-welcome.png';
+import wizardHome from '../../../../assets/screenshots/wizard-home.png';
+
 :::note
-Diese Funktion ist nur in der **AppExchange Edition** verfügbar und erfordert, dass der **Storage Mode** der Komponente auf **Isolated** gesetzt ist.
+Diese Funktion ist nur in der **AppExchange Edition** verfügbar. Der **Storage Mode** der Komponente muss auf **Isolated** gesetzt sein, damit Sichtbarkeitssteuerungen greifen.
 :::
 
 ## Übersicht
 
-Sichtbarkeitssteuerungen ermöglichen es Administratoren, den Dateizugriff basierend auf Dokumentkategorien und Benutzerrollen einzuschränken. Dateien können Kategorien zugewiesen werden, und jede Kategorie kann auf bestimmte Rollen beschränkt werden — Benutzer außerhalb dieser Rollen sehen die Dateien nicht. Zusätzlich kann jeder Benutzer eine Datei als privat markieren, sodass sie nur für ihn selbst und autorisierte Betrachter sichtbar ist.
-
-Die gesamte Filterung wird **serverseitig** durchgeführt — Dateien, auf die ein Benutzer keinen Zugriff hat, werden nie an den Browser gesendet.
+Sichtbarkeitssteuerungen ermöglichen es Administratoren, den Dateizugriff über **Dokumentkategorien** (zugeordnet zu Rollen in der Salesforce-Rollenhierarchie) einzuschränken, und erlauben es jedem Benutzer, einzelne Dateien als **privat** zu markieren. Die gesamte Filterung erfolgt **serverseitig** in `getFilesList()` – eingeschränkte Dateien gelangen nie an nicht autorisierte Browser.
 
 ## Speichermodus-Anforderung
-
-Sichtbarkeitssteuerungen sind nur verfügbar, wenn der **Storage Mode** der Komponente auf **Isolated** gesetzt ist:
 
 | | Standard | Isolated |
 |---|---|---|
@@ -24,117 +29,111 @@ Sichtbarkeitssteuerungen sind nur verfügbar, wenn der **Storage Mode** der Komp
 | Als privat markieren | Nicht verfügbar | Verfügbar |
 | Rollenbasierte Sichtbarkeitsfilterung | Nicht verfügbar | Verfügbar |
 
-Im Isolated-Modus werden Dateien ausschließlich über einen Junction-Record mit dem Datensatz verknüpft — sie erscheinen nicht in der Standard Salesforce Files Related List.
+Im Standard-Modus wird kein Junction-Record erstellt, sodass keine Möglichkeit besteht, Kategorie oder Privat-Flag zu speichern. Wechseln Sie für jeden Datensatz, bei dem die Sichtbarkeitsfilterung relevant ist, zu Isolated. Siehe [Storage Modes](/features/storage-modes/).
 
 ## Dokumentkategorien
 
-### Was sind Kategorien?
+Eine Kategorie ist ein Label, das einer Datei zugewiesen wird und bestimmt, wer sie sehen kann. Kategorien werden als `Tucario_Visibility_Rule__mdt`-Records gespeichert und über den Configuration Wizard verwaltet.
 
-Eine Kategorie ist ein Label, das einer Datei zugewiesen wird und bestimmt, wer sie sehen kann. Kategorien werden von einem Administrator über den **Configuration Wizard** definiert und als Custom Metadata Type Records gespeichert.
+Häufige Beispiele: *HR Documents*, *Underwriting Documents*, *Finanzberichte*, *Rechtsverträge*, *Krankenakten*.
 
-Beispiele:
-- Gesundheitsakten
-- Finanzberichte
-- Rechtsverträge
-- Interne Mitteilungen
+### Funktionsweise der Filterung
 
-### Wie die Kategoriefilterung funktioniert
+Jede Regel ordnet einer Kategorie eine Liste erlaubter Rollen-`DeveloperName`-Werte zu. Für jede Datei gilt:
 
-Jede Kategorie hat eine Liste von **berechtigten Rollen**. Wenn einer Datei eine Kategorie zugewiesen ist:
+- Datei hat **keine Kategorie** → für alle sichtbar (standardmäßig offen).
+- Datei hat eine Kategorie, **Rolle des Benutzers steht auf der Berechtigungsliste** → sichtbar.
+- Datei hat eine Kategorie, **Rolle des Benutzers ist nicht berechtigt** → ausgeblendet.
+- Datei hat eine Kategorie, **Regel ist inaktiv** (`Is_Active = false`) → für alle sichtbar (deaktivierte Regeln filtern nicht).
+- Benutzer hat die Custom Permission **Manage Categories** → Kategoriefilterung wird umgangen (sieht immer alle Dateien).
 
-- Wenn die Rolle des Benutzers auf der berechtigten Liste steht → Datei ist **sichtbar**
-- Wenn die Rolle des Benutzers NICHT auf der berechtigten Liste steht → Datei ist **ausgeblendet**
-- Wenn einer Kategorie keine Rollen zugewiesen sind → Datei ist für **alle** sichtbar
-- Wenn eine Datei keine Kategorie hat → Datei ist für **alle** sichtbar
+Mehrere Regeln, die sich auf dieselbe Kategorie beziehen, werden mit **ODER**-Logik verknüpft – ein Benutzer hat Zugriff, wenn seine Rolle auf *einer* der Berechtigungslisten der Kategorie steht.
 
-### Kategorien zu Dateien zuweisen
+### Einer Datei eine Kategorie zuweisen
 
-Benutzer mit dem **Tucario - Manage File Categories** Permission Set können Kategorien zuweisen:
+Benutzer mit **Manage Categories** können eine Kategorie über das Kontextmenü der Datei zuweisen:
 
-1. Klicken Sie auf das Aktionsmenü einer Datei.
-2. Wählen Sie **Set Category**.
-3. Wählen Sie eine Kategorie aus der Auswahl oder wählen Sie **No Category**, um die aktuelle Zuweisung zu entfernen.
+1. Öffnen Sie das Kontextmenü der Datei und wählen Sie **Set Category**.
+2. Wählen Sie eine Kategorie aus der Auswahl, oder wählen Sie **No Category**, um die Zuweisung zu entfernen.
+3. Die Sichtbarkeit der Datei wird sofort aktualisiert.
 
-Die Sichtbarkeit der Datei wird sofort aktualisiert.
+<Image src={setCategory} alt="Set Category-Modal mit geöffneter Kategorieauswahl" />
 
-<video controls playsinline style="width:100%; border-radius:8px;">
-  <source src="/docs/assigning-categories-to-files.mp4" type="video/mp4" />
-</video>
+:::caution
+Benutzer *ohne* die Manage Categories-Berechtigung sehen die Option **Set Category** ebenfalls, erhalten jedoch einen Bestätigungshinweis, dass die Datei nach Zuweisung einer eingeschränkten Kategorie möglicherweise aus ihrer eigenen Ansicht verschwindet (da sie die Filterung nicht umgehen können).
+:::
 
-### Kategorien verwalten
+## Sichtbarkeitsregeln konfigurieren
 
-Kategorien werden über den **Configuration Wizard** in der Smarter Files App verwaltet:
+Öffnen Sie die **Smarter Files by Tucario**-App über den App Launcher. Der Configuration Wizard öffnet sich auf dem Startbildschirm mit zwei Karten: *Manage Document Categories* und *Private Documents*.
 
-1. Öffnen Sie die **Smarter Files by Tucario** App über den App Launcher.
-2. Klicken Sie auf **Manage Document Categories**.
-3. **Schritt 1 — Dokumenttypen**: Fügen Sie Kategorien mit Namen und optionalen Beschreibungen hinzu.
-4. **Schritt 2 — Rollen zuweisen**: Wählen Sie für jede Kategorie aus, welche Rollen Dateien in dieser Kategorie sehen können.
-5. **Schritt 3 — Überprüfen & Deployen**: Überprüfen Sie die Konfiguration und klicken Sie auf Deploy.
+<Image src={wizardWelcome} alt="Startbildschirm des Configuration Wizards" />
 
-<video controls playsinline style="width:100%; border-radius:8px;">
-  <source src="/docs/add-category.mp4" type="video/mp4" />
-</video>
+<Image src={wizardHome} alt="Configuration Wizard-Startseite mit den Karten „Manage Categories" und „Private Documents"" />
+
+Klicken Sie auf **Manage Document Categories**, um den dreistufigen Regelassistenten zu öffnen.
+
+### Schritt 1 — Dokumenttypen definieren
+
+Fügen Sie die Dokumenttypen hinzu, die Sie steuern möchten. Jeder Typ hat einen Namen und eine optionale Beschreibung.
+
+<Image src={wizardDefine} alt="Wizard-Schritt 1: Definition eines Dokumenttyps namens „Underwriting Documents"" />
+
+<Image src={wizardDefineMultiple} alt="Wizard-Schritt 1 mit mehreren hinzugefügten Dokumenttypen" />
+
+### Schritt 2 — Rollen zuweisen
+
+Wählen Sie für jeden Dokumenttyp die Rollen aus, die Dateien in dieser Kategorie sehen dürfen. Die Dual-Listbox wird aus der Rollenhierarchie Ihrer Organisation befüllt (maximal 1000 Rollen).
+
+<Image src={wizardRoles} alt="Wizard-Schritt 2: Dual-Listbox mit verfügbaren Rollen links und berechtigten Rollen rechts" />
+
+### Schritt 3 — Überprüfen & Deployen
+
+Überprüfen Sie aktive und deaktivierte Kategorien und klicken Sie dann auf **Deploy Configuration**. Der Wizard ruft `Metadata.Operations.enqueueDeployment()` auf, um die Regeln asynchron als `Tucario_Visibility_Rule__mdt`-Records zu schreiben, und fragt den Fertigstellungsstatus ab. Ein Ladeindikator zeigt den Fortschritt an.
+
+<Image src={wizardReview} alt="Wizard-Schritt 3: Übersicht aller Kategorien mit der Deploy-Schaltfläche" />
 
 :::note
-**Entfernen einer Kategorie:** Wenn Sie einen Dokumenttyp aus dem Wizard entfernen und deployen, wird der zugrunde liegende Custom Metadata Type Record nicht gelöscht — er wird **deaktiviert** (`Is_Active = false`). Deaktivierte Kategorien erscheinen nicht mehr in der Kategorieauswahl oder filtern Dateien. Dies liegt daran, dass die Salesforce Metadata API das Löschen von Custom Metadata Type Records aus Apex nicht unterstützt.
+**Kategorie entfernen:** Das Entfernen eines Dokumenttyps aus dem Wizard und das anschließende Deployen **löscht** den CMT-Record nicht – es setzt `Is_Active = false`. Die Salesforce Metadata API unterstützt das Löschen von CMT-Records aus Apex nicht; die Deaktivierung ist der nächstmögliche Ersatz. Deaktivierte Kategorien erscheinen weder in der Kategorieauswahl noch filtern sie Dateien; sie können zu einem späteren Zeitpunkt reaktiviert werden, indem eine Kategorie mit demselben Namen erneut hinzugefügt wird.
 :::
 
 ## Private Dokumente
 
-### Dateien als privat markieren
-
-Jeder Benutzer kann im Isolated-Modus eine Datei als privat markieren:
-
-1. Klicken Sie auf das Aktionsmenü einer Datei.
-2. Wählen Sie **Mark as Private**.
-3. Ein Schlosssymbol erscheint neben dem Dateinamen.
-
-<video controls playsinline style="width:100%; border-radius:8px;">
-  <source src="/docs/make-file-private.mp4" type="video/mp4" />
-</video>
-
-Die Datei ist jetzt nur sichtbar für:
-- Den Benutzer, der sie als privat markiert hat (der Besitzer)
-- Benutzer mit dem **Tucario - View Private Documents** Permission Set
-
-### Private Markierung entfernen
-
-Der Dateibesitzer kann die Privat-Markierung entfernen:
-
-1. Klicken Sie auf das Aktionsmenü der privaten Datei.
-2. Wählen Sie **Remove Private**.
-3. Die Datei kehrt zu den normalen Sichtbarkeitsregeln zurück.
+Zusätzlich zur kategoriebasierten Filterung kann jeder Benutzer einzelne Dateien als privat markieren – sichtbar nur für ihn selbst und Benutzer mit der Berechtigung **View Private Documents**. Den vollständigen Ablauf finden Sie unter [Private Dokumente](/features/private-documents/).
 
 ## Kombinierte Filterlogik
 
-Wenn eine Datei sowohl eine Kategorie als auch eine Privat-Markierung hat, müssen **beide Prüfungen bestanden werden**, damit die Datei sichtbar ist:
+Wenn eine Datei sowohl eine Kategorie als auch ein Privat-Flag hat, müssen **beide Prüfungen bestanden werden**, damit sie sichtbar ist. Pseudocode für `getFilesList()`:
 
 ```
-Für jede Datei:
+Für jede Datei im Datensatz:
   1. Privat-Prüfung:
-     Wenn Datei privat ist UND Benutzer nicht der Besitzer ist
-     UND Benutzer keine "View Private Documents"-Berechtigung hat → AUSBLENDEN
+     Wenn Is_Private UND Benutzer ist nicht Owner_Id
+     UND Benutzer hat keine „View Private Documents"-Berechtigung → AUSBLENDEN
 
   2. Kategorie-Prüfung:
-     Wenn Datei eine Kategorie mit berechtigten Rollen hat
-     UND die Rolle des Benutzers nicht in der Liste ist
-     UND Benutzer keine "Manage Categories"-Berechtigung hat → AUSBLENDEN
+     Wenn Visibility_Category gesetzt ist
+     UND eine passende aktive Regel existiert
+     UND die Rolle des Benutzers nicht in Permitted_Roles ist
+     UND Benutzer hat keine „Manage Categories"-Berechtigung → AUSBLENDEN
 
   3. Andernfalls → ANZEIGEN
 ```
+
+Die restriktivere der beiden Prüfungen hat Vorrang.
 
 ## Permission Sets
 
 | Permission Set | Zweck |
 |---|---|
-| **Tucario Files** | Basiszugang. Gewährt Zugang zur App, Controllern und Junction-Objekt. Allen Benutzern zuweisen. |
-| **Tucario - Manage File Categories** | Ermöglicht das Zuweisen von Kategorien zu Dateien. **Umgeht die Kategoriefilterung** — Benutzer mit dieser Berechtigung sehen alle Dateien unabhängig von der Kategorie. |
+| **Tucario Files** | Basiszugang. Für alle Benutzer erforderlich. Gewährt Zugang zur App, den Controllern und dem Junction-Objekt. |
+| **Tucario - Manage File Categories** | Zugang zum „Set Category"-Menü sowie Umgehung der Kategoriefilterung (sieht immer alle Dateien). |
 | **Tucario - View Private Documents** | Ermöglicht das Anzeigen von Dateien, die von anderen Benutzern als privat markiert wurden. |
 
 ## Anwendungsfälle
 
-- **Gesundheitsakten** nur für Personalmanager und medizinisches Personal sichtbar.
-- **Finanzberichte** auf das Finanzteam beschränkt.
-- **Rechtsverträge** nur für Rollen der Rechtsabteilung zugänglich.
-- **Vertrauliche Anhänge** von einzelnen Benutzern als privat für den persönlichen Gebrauch markiert.
-- **Entwurfsdokumente** vor externen Rollen verborgen, bis sie bereit sind.
+- **HR-Dokumente** nur für HR-Rollen sichtbar, mit Privat-Markierung für individuelle Mitarbeiterdatensätze.
+- **Finanzberichte** auf Finance-Rollen beschränkt, unabhängig davon, wer sie hochgeladen hat.
+- **Rechtsverträge** ausschließlich für Rollen der Rechtsabteilung zugänglich, mit Privat-Markierung für Vertragsentwürfe.
+- **Underwriting-Dokumente** mit personenbezogenen Daten, beschränkt auf Underwriter-Rollen.
+- **Vertrauliche Anhänge an einem gemeinsam genutzten Datensatz** — zweite Komponenteninstanz im Isolated-Modus mit angewendeten Kategorien, vollständig aus der Standard Files Related List ausgeblendet.

@@ -1,43 +1,53 @@
 ---
 title: インストール
-description: Salesforce組織にSmarter Filesをインストールする方法。
+description: SalesforceorgにSmarter Filesをインストールする方法。
 ---
+
+import { Image } from 'astro:assets';
+import packageInstaller from '../../../../assets/screenshots/package-installer.png';
+import permSets from '../../../../assets/screenshots/permission-sets-deployed.png';
+
+## AppExchange Edition（マネージドパッケージ）
+
+1. Tucarioの営業担当者またはAppExchangeリスティングからインストールリンクを開きます。
+2. アクセス制御の方針に応じて、**すべてのユーザーにインストール**、**管理者のみにインストール**、または**特定のプロファイルにインストール**を選択します。
+3. サードパーティアクセスの確認プロンプトを承認し、インストールが完了するまで待機します。
+
+<Image src={packageInstaller} alt="Smarter FilesのSalesforceパッケージインストーラー" />
 
 ## Free Edition（GitHub）
 
 1. [GitHub](https://github.com/tucario/SalesforceSmarterFiles)からリポジトリをクローンまたはダウンロードします。
-2. Salesforce CLIを使用してSalesforce組織にデプロイします：
+2. Salesforce CLIを使用してSalesforce orgにデプロイします：
 
 ```bash
-sf project deploy start --source-dir force-app
+sf project deploy start --source-dir src
 ```
 
-3. Lightning App Builderでレコードページに移動し、**Smarter Files**コンポーネントをレイアウトにドラッグします。
+## 権限セットの割り当て
 
-### ワンクリックデプロイ（代替方法）
+Smarter Filesには3つの権限セットが含まれています。コンポーネントを使用するすべてのユーザーには、少なくとも基本権限セットが必要です。
 
-GitHubデプロイツールを使用して、組織に直接インストールすることもできます：
+<Image src={permSets} alt="SetupにあるSmarter Filesの権限セット" />
 
-1. 環境を選択します（ProductionまたはSandbox）：
+| 権限セット | 対象 | 付与内容 |
+|---|---|---|
+| **Tucario Files (Base)** | コンポーネントのすべてのユーザー | アプリアクセス、表示ジャンクションオブジェクトへのCRUD、ファイルコントローラーへのアクセス |
+| **Tucario - Manage File Categories** | 管理者およびカテゴリオーナー | カスタム権限 `Tucario_Manage_Categories` — ファイルへのカテゴリ割り当て、カテゴリフィルタリングのバイパス |
+| **Tucario - View Private Documents** | 管理者、HR、コンプライアンス担当者 | カスタム権限 `Tucario_View_Private_Documents` — 他のユーザーがプライベートに設定したファイルの閲覧 |
 
-![デプロイツールの設定](/docs/deploy-tool-settings.png)
+**Setup → 権限セット → [名前] → 割り当ての管理** から割り当ててください。
 
-2. Salesforce組織へのアクセスを許可します：
+## レコードページへのコンポーネントの追加
 
-![アクセス許可プロンプト](/docs/deploy-allow-access.png)
-
-3. デプロイするコンポーネントを確認します：
-
-![デプロイ確認](/docs/deploy-tool-confirmation.png)
-
-## AppExchange Edition
-
-1. AppExchangeからインストールします（近日公開）。
-2. Lightning App Builderを使用して、任意のレコードページに**Smarter Files**コンポーネントを配置します。
-3. コンポーネント設定パネルで表示ルールを構成します。
+1. **Lightning App Builder** で任意のレコードページを開きます。
+2. コンポーネントパレットから**Smarter Files**をレイアウト上にドラッグします。
+3. 右側のパネルでデザインプロパティを設定します。プロパティの詳細については[コンポーネントのセットアップ](/configuration/component-setup/)を参照してください。
+4. ページを保存してアクティブ化します。
 
 ## 要件
 
-- Salesforce **Enterprise**、**Professional**、または**Unlimited**エディション。
-- Lightning Experienceが有効であること。
-- Platformライセンスで十分です — フルSalesforceライセンスは不要です。
+- Salesforce **Enterprise**、**Professional**、または**Unlimited** Edition。
+- Lightning Experience が有効になっていること。
+- Platform Starter / Platform Plus ライセンスに対応しています — フルSalesforceライセンスは不要です。
+- 公開リンクの生成には：**コンテンツデリバリーと公開リンク** が有効になっている必要があります（Setup → Salesforce Files）。

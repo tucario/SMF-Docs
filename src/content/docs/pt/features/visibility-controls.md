@@ -1,21 +1,26 @@
 ---
 title: Controles de Visibilidade
-description: Controles de visibilidade de documentos disponíveis na Edição AppExchange.
+description: Categorias de documentos, filtragem baseada em papéis e documentos privados no Smarter Files.
 ---
 
+import { Image } from 'astro:assets';
+import setCategory from '../../../../assets/screenshots/set-category-modal.png';
+import wizardDefine from '../../../../assets/screenshots/wizard-define-types.png';
+import wizardDefineMultiple from '../../../../assets/screenshots/wizard-define-types-multiple.png';
+import wizardRoles from '../../../../assets/screenshots/wizard-assign-roles.png';
+import wizardReview from '../../../../assets/screenshots/wizard-review-deploy.png';
+import wizardWelcome from '../../../../assets/screenshots/wizard-welcome.png';
+import wizardHome from '../../../../assets/screenshots/wizard-home.png';
+
 :::note
-Esta funcionalidade está disponível apenas na **Edição AppExchange** e requer que o **Storage Mode** do componente esteja definido como **Isolated**.
+Disponível apenas na **Edição AppExchange**. O **Storage Mode** do componente deve estar definido como **Isolated** para que os controles de visibilidade sejam aplicados.
 :::
 
 ## Visão Geral
 
-Os controles de visibilidade permitem que administradores restrinjam o acesso a arquivos com base em categorias de documentos e papéis de usuários. Arquivos podem ser atribuídos a categorias, e cada categoria pode ser restrita a papéis específicos — usuários fora desses papéis não verão os arquivos. Além disso, qualquer usuário pode marcar um arquivo como privado, tornando-o visível apenas para si mesmo e para visualizadores autorizados.
-
-Toda a filtragem é realizada **no lado do servidor** — arquivos que um usuário não pode acessar nunca são enviados ao navegador.
+Os controles de visibilidade permitem que administradores restrinjam o acesso a arquivos por **categoria de documento** (mapeada para papéis na hierarquia de papéis do Salesforce) e permitem que qualquer usuário marque arquivos individuais como **privados**. Toda a filtragem acontece **no lado do servidor** em `getFilesList()` — arquivos restritos nunca chegam a navegadores não autorizados.
 
 ## Requisito de Storage Mode
-
-Os controles de visibilidade estão disponíveis apenas quando o **Storage Mode** do componente está definido como **Isolated**:
 
 | | Standard | Isolated |
 |---|---|---|
@@ -24,117 +29,111 @@ Os controles de visibilidade estão disponíveis apenas quando o **Storage Mode*
 | Marcar como Privado | Não disponível | Disponível |
 | Filtragem de visibilidade baseada em papéis | Não disponível | Disponível |
 
-No modo Isolated, os arquivos são vinculados ao registro exclusivamente através de um registro de junção — eles não aparecem na lista relacionada padrão de Files do Salesforce.
+No modo Standard, nenhum registro de junção é criado, portanto não há onde armazenar a categoria ou o sinalizador de privado. Mude para Isolated em qualquer registro onde a filtragem de visibilidade seja necessária. Consulte [Storage Modes](/features/storage-modes/).
 
 ## Categorias de Documentos
 
-### O Que São Categorias?
+Uma categoria é um rótulo atribuído a um arquivo que determina quem pode vê-lo. As categorias vivem em registros de `Tucario_Visibility_Rule__mdt` e são gerenciadas através do Configuration Wizard.
 
-Uma categoria é um rótulo atribuído a um arquivo que determina quem pode vê-lo. As categorias são definidas por um administrador através do **Configuration Wizard** e armazenadas como registros de Custom Metadata Type.
+Exemplos comuns: *HR Documents*, *Underwriting Documents*, *Financial Reports*, *Legal Contracts*, *Medical Records*.
 
-Exemplos:
-- Registros de Saúde
-- Relatórios Financeiros
-- Contratos Jurídicos
-- Memorandos Internos
+### Como Funciona a Filtragem
 
-### Como Funciona a Filtragem por Categoria
+Cada regra mapeia uma categoria para uma lista de valores de `DeveloperName` de papéis permitidos. Para cada arquivo:
 
-Cada categoria possui uma lista de **papéis permitidos**. Quando um arquivo tem uma categoria atribuída:
+- Arquivo **sem categoria** → visível para todos (padrão aberto).
+- Arquivo com categoria, **papel do usuário está na lista de permitidos** → visível.
+- Arquivo com categoria, **papel do usuário não está permitido** → oculto.
+- Arquivo com categoria, **regra inativa** (`Is_Active = false`) → visível para todos (regras desativadas não filtram).
+- Usuário tem a custom permission **Manage Categories** → ignora a filtragem por categoria (sempre vê todos os arquivos).
 
-- Se o papel do usuário está na lista de permitidos → o arquivo é **visível**
-- Se o papel do usuário NÃO está na lista de permitidos → o arquivo é **oculto**
-- Se nenhum papel está atribuído a uma categoria → o arquivo é visível para **todos**
-- Se um arquivo não tem categoria → o arquivo é visível para **todos**
+Múltiplas regras referenciando a mesma categoria se combinam com lógica **OU** — um usuário passa se o seu papel estiver em *qualquer* lista de permitidos para a categoria.
 
-### Atribuindo Categorias a Arquivos
+### Atribuindo uma Categoria a um Arquivo
 
-Usuários com o permission set **Tucario - Manage File Categories** podem atribuir categorias:
+Usuários com **Manage Categories** podem atribuir uma categoria pelo menu de contexto do arquivo:
 
-1. Clique no menu de ações de um arquivo.
-2. Selecione **Set Category**.
-3. Escolha uma categoria no seletor, ou selecione **No Category** para remover a atribuição atual.
+1. Abra o menu de contexto do arquivo e selecione **Set Category**.
+2. Escolha uma categoria no seletor, ou selecione **No Category** para limpar.
+3. A visibilidade do arquivo é atualizada imediatamente.
 
-A visibilidade do arquivo é atualizada imediatamente.
+<Image src={setCategory} alt="Modal Set Category com o seletor de categoria aberto" />
 
-<video controls playsinline style="width:100%; border-radius:8px;">
-  <source src="/docs/assigning-categories-to-files.mp4" type="video/mp4" />
-</video>
+:::caution
+Usuários *sem* a permissão Manage Categories ainda veem a opção **Set Category**, mas recebem um aviso de confirmação informando que o arquivo pode desaparecer da própria visualização deles assim que uma categoria restrita for aplicada (pois eles não ignoram a filtragem).
+:::
 
-### Gerenciando Categorias
+## Configurando Regras de Visibilidade
 
-As categorias são gerenciadas através do **Configuration Wizard** no aplicativo Smarter Files:
+Abra o aplicativo **Smarter Files by Tucario** a partir do App Launcher. O Configuration Wizard abre na tela inicial com dois cartões: *Manage Document Categories* e *Private Documents*.
 
-1. Abra o aplicativo **Smarter Files by Tucario** a partir do App Launcher.
-2. Clique em **Manage Document Categories**.
-3. **Etapa 1 — Tipos de Documento**: Adicione categorias com nomes e descrições opcionais.
-4. **Etapa 2 — Atribuir Papéis**: Para cada categoria, selecione quais papéis podem ver os arquivos dessa categoria.
-5. **Etapa 3 — Revisar e Implantar**: Revise a configuração e clique em Deploy.
+<Image src={wizardWelcome} alt="Tela de boas-vindas do Configuration Wizard" />
 
-<video controls playsinline style="width:100%; border-radius:8px;">
-  <source src="/docs/add-category.mp4" type="video/mp4" />
-</video>
+<Image src={wizardHome} alt="Tela inicial do Configuration Wizard com os cartões Manage Categories e Private Documents" />
+
+Clique em **Manage Document Categories** para entrar no wizard de regras em 3 etapas.
+
+### Etapa 1 — Definir Tipos de Documento
+
+Adicione os tipos de documento que deseja controlar. Cada um tem um nome e uma descrição opcional.
+
+<Image src={wizardDefine} alt="Etapa 1 do wizard: definindo um tipo de documento chamado Underwriting Documents" />
+
+<Image src={wizardDefineMultiple} alt="Etapa 1 do wizard com múltiplos tipos de documento adicionados" />
+
+### Etapa 2 — Atribuir Papéis
+
+Para cada tipo de documento, escolha os papéis autorizados a ver os arquivos dessa categoria. A caixa de listagem dupla é preenchida a partir da hierarquia de papéis da sua org (limitado a 1000 papéis).
+
+<Image src={wizardRoles} alt="Etapa 2 do wizard: caixa de listagem dupla com papéis disponíveis à esquerda e papéis permitidos à direita" />
+
+### Etapa 3 — Revisar e Implantar
+
+Revise as categorias ativas e desativadas, depois clique em **Deploy Configuration**. O wizard chama `Metadata.Operations.enqueueDeployment()` para gravar as regras como registros de `Tucario_Visibility_Rule__mdt` de forma assíncrona, monitorando a conclusão. Um indicador de carregamento mostra o progresso.
+
+<Image src={wizardReview} alt="Etapa 3 do wizard: revisão de todas as categorias com o botão Deploy" />
 
 :::note
-**Removendo uma categoria:** Quando você remove um tipo de documento do wizard e implanta, o registro subjacente de Custom Metadata Type não é excluído — ele é **desativado** (`Is_Active = false`). Categorias desativadas não aparecem mais no seletor de categorias e não filtram arquivos. Isso ocorre porque a Salesforce Metadata API não suporta a exclusão de registros de Custom Metadata Type a partir do Apex.
+**Removendo uma categoria:** remover um tipo de documento do wizard e implantar **não** exclui o registro de CMT — define `Is_Active = false`. A Salesforce Metadata API não suporta a exclusão de registros de CMT a partir do Apex, portanto a desativação é o equivalente mais próximo. Categorias desativadas não aparecem mais no seletor nem filtram arquivos, e podem ser reativadas posteriormente adicionando novamente uma categoria com o mesmo nome.
 :::
 
 ## Documentos Privados
 
-### Marcando Arquivos como Privados
-
-Qualquer usuário pode marcar um arquivo como privado no modo Isolated:
-
-1. Clique no menu de ações de um arquivo.
-2. Selecione **Mark as Private**.
-3. Um ícone de cadeado aparece ao lado do nome do arquivo.
-
-<video controls playsinline style="width:100%; border-radius:8px;">
-  <source src="/docs/make-file-private.mp4" type="video/mp4" />
-</video>
-
-O arquivo agora é visível apenas para:
-- O usuário que o marcou como privado (o proprietário)
-- Usuários com o permission set **Tucario - View Private Documents**
-
-### Removendo o Status de Privado
-
-O proprietário do arquivo pode remover o sinalizador de privado:
-
-1. Clique no menu de ações do arquivo privado.
-2. Selecione **Remove Private**.
-3. O arquivo retorna às regras normais de visibilidade.
+Além da filtragem baseada em categoria, qualquer usuário pode marcar arquivos individuais como privados — visíveis apenas para si mesmo e para usuários com a permissão **View Private Documents**. Consulte [Documentos Privados](/features/private-documents/) para o fluxo completo.
 
 ## Lógica de Filtragem Combinada
 
-Quando um arquivo possui tanto uma categoria quanto um sinalizador de privado, **ambas as verificações devem passar** para que o arquivo seja visível:
+Quando um arquivo possui tanto uma categoria quanto um sinalizador de privado, **ambas as verificações devem passar** para que ele seja visível. Pseudocódigo de `getFilesList()`:
 
 ```
-For each file:
+For each file on the record:
   1. Private check:
-     If file is private AND user is not the owner
-     AND user lacks "View Private Documents" permission → HIDE
+     If Is_Private AND user is not Owner_Id
+     AND user lacks "View Private Documents" → HIDE
 
   2. Category check:
-     If file has a category with permitted roles
-     AND user's role is not in the list
-     AND user lacks "Manage Categories" permission → HIDE
+     If Visibility_Category is set
+     AND a matching active rule exists
+     AND user's role is not in Permitted_Roles
+     AND user lacks "Manage Categories" → HIDE
 
   3. Otherwise → SHOW
 ```
+
+A verificação mais restritiva das duas prevalece.
 
 ## Permission Sets
 
 | Permission Set | Finalidade |
 |---|---|
-| **Tucario Files** | Acesso base. Concede acesso ao aplicativo, controladores e objeto de junção. Atribua a todos os usuários. |
-| **Tucario - Manage File Categories** | Permite atribuir categorias a arquivos. **Ignora a filtragem por categoria** — usuários com esta permissão veem todos os arquivos independentemente da categoria. |
-| **Tucario - View Private Documents** | Permite visualizar arquivos marcados como privados por outros usuários. |
+| **Tucario Files** | Acesso base. Obrigatório para todos os usuários. Concede o aplicativo, os controladores e o objeto de junção. |
+| **Tucario - Manage File Categories** | Acesso ao menu Set Category + ignora a filtragem por categoria (sempre vê todos os arquivos). |
+| **Tucario - View Private Documents** | Ver arquivos marcados como privados por outros usuários. |
 
 ## Casos de Uso
 
-- **Registros de saúde** visíveis apenas para gerentes de RH e equipe médica.
-- **Relatórios financeiros** restritos à equipe financeira.
-- **Contratos jurídicos** acessíveis apenas a papéis do departamento jurídico.
-- **Anexos sensíveis** marcados como privados por usuários individuais para uso pessoal.
-- **Documentos em rascunho** ocultos de papéis voltados para o externo até estarem prontos.
+- **Documentos de RH** visíveis apenas para papéis de RH, com marcação de privado para registros individuais de funcionários.
+- **Relatórios financeiros** restritos a papéis do departamento financeiro, independentemente de quem os enviou.
+- **Contratos jurídicos** bloqueados para papéis do departamento jurídico, com marcação de privado em contratos em rascunho.
+- **Documentos de subscrição** contendo dados pessoais sensíveis, restritos a papéis de subscritores.
+- **Anexos confidenciais em um registro compartilhado** — segunda instância do componente em modo Isolated com categorias aplicadas, oculta completamente da lista relacionada padrão de Files.

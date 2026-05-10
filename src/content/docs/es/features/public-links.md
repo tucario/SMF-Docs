@@ -1,25 +1,31 @@
 ---
 title: Enlaces Públicos
-description: Generar enlaces públicos para compartir archivos.
+description: Genera enlaces públicos para compartir archivos con un solo clic.
 ---
+
+import { Image } from 'astro:assets';
+import publicLink from '../../../../assets/screenshots/public-link-copied.png';
 
 ## Descripción General
 
-Genera enlaces públicos para compartir archivos individuales directamente desde el componente, sin necesidad de navegar fuera del registro.
+Genera una URL pública para compartir cualquier archivo directamente desde el menú contextual del archivo — sin necesidad de navegar a la página de detalle del archivo ni abrir un modal de uso compartido separado.
+
+<Image src={publicLink} alt="Menú contextual de archivo con la opción Public Link y una notificación confirmando que la URL se copió al portapapeles" />
 
 ## Cómo Crear un Enlace Público
 
-1. Haz clic en el menú de acciones de un archivo.
+1. Haz clic en el menú contextual del archivo que deseas compartir.
 2. Selecciona **Public Link**.
-3. El componente crea una Salesforce Content Distribution y copia la URL pública a tu portapapeles.
-4. Una notificación de éxito confirma que el enlace fue creado.
+3. Smarter Files crea un registro de Salesforce **Content Distribution** para el archivo y **copia automáticamente la URL a tu portapapeles**.
+4. Una notificación de éxito confirma que el enlace fue creado y copiado.
 
-La URL generada es un enlace público estándar de Salesforce — no requiere autenticación y puede compartirse con cualquier persona.
+La URL generada es un enlace público estándar de Salesforce — no requiere autenticación y puede compartirse con cualquier persona (incluidas personas fuera de tu organización de Salesforce).
 
-## Configuración
+## Requisitos
 
-Los enlaces públicos pueden habilitarse o deshabilitarse por instancia del componente mediante la propiedad **Show Public Link** en Lightning App Builder.
+- **Content Deliveries and Public Links** debe estar habilitado en tu organización. Configuración → busca "Content Deliveries" → habilitar. Sin esto, la opción de menú **Public Link** aparece deshabilitada y un tooltip explica el motivo.
+- El usuario que crea el enlace necesita acceso de eliminación sobre el archivo (la regla estándar de Salesforce para crear Content Distributions).
 
-:::note
-La creación de enlaces públicos requiere que Content Deliveries estén habilitadas en tu organización de Salesforce. Ve a **Setup > Content Deliveries and Public Links** para habilitar esta función.
-:::
+## Gestionar los Enlaces Existentes
+
+Los enlaces públicos creados a través de Smarter Files aparecen en Salesforce bajo la lista relacionada **Distributions** del archivo, junto con cualquier enlace creado desde la interfaz estándar. Desde allí puedes revocarlos, establecer fechas de vencimiento o requerir una contraseña.
