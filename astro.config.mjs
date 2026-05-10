@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import mdx from '@astrojs/mdx';
 
 export default defineConfig({
   site: 'https://docs.getsmarterfiles.com',
@@ -11,6 +12,10 @@ export default defineConfig({
       logo: {
         src: './src/assets/logo.png',
       },
+      components: {
+        Head: './src/components/Head.astro',
+      },
+      customCss: ['./src/styles/custom.css'],
       editLink: {
         baseUrl: 'https://github.com/tucario/SMF-Docs/edit/main/',
       },
@@ -26,7 +31,6 @@ export default defineConfig({
         ar: { label: 'العربية', lang: 'ar', dir: 'rtl' },
       },
       social: [
-        { icon: 'github', label: 'GitHub', href: 'https://github.com/tucario/SalesforceSmarterFiles' },
         { icon: 'external', label: 'getsmarterfiles.com', href: 'https://getsmarterfiles.com' },
       ],
       sidebar: [
@@ -102,5 +106,6 @@ export default defineConfig({
         },
       ],
     }),
+    mdx(),
   ],
 });

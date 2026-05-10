@@ -5,6 +5,7 @@ description: Mark files as private to restrict access to the file owner and appr
 
 import { Image } from 'astro:assets';
 import markPrivate from '../../../assets/screenshots/mark-as-private.png';
+import wizardPrivate from '../../../assets/screenshots/wizard-private-documents.png';
 
 :::note
 Available in **AppExchange Edition** only. Requires **Isolated** storage mode on the component instance.
@@ -55,3 +56,14 @@ When you mark a file private, Smarter Files writes to the `Tucario_File_Visibili
 - Sets `Owner_Id__c` to the current user (enforced by the `Owner_Required_When_Private` validation rule — `Owner_Id__c` cannot be null when `Is_Private__c` is true).
 
 All filtering happens server-side in `getFilesList()` before the response leaves the Salesforce server, so private files are never sent to unauthorized browsers.
+
+## Configuration Wizard reference
+
+Reached from the **Private Documents** action card on the Configuration Wizard home view. This is a standalone explanatory page (no wizard steps). It contains an info banner about how private documents work and two video tutorial cards:
+
+1. **How to put the component on a page** — short tutorial on adding the component via App Builder.
+2. **How to mark files as private** — walk-through of the per-file action.
+
+Clicking a card plays the corresponding `<video>` element inline.
+
+<Image src={wizardPrivate} alt="Configuration Wizard Private Documents page with two tutorial video cards" />

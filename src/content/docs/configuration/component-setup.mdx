@@ -1,0 +1,133 @@
+---
+title: Component Setup
+description: How to add and configure Smarter Files on a record page.
+---
+
+import { Image } from 'astro:assets';
+import appBuilder from '../../../assets/screenshots/app-builder-properties.png';
+import cardTitle from '../../../assets/screenshots/app-builder-card-title.png';
+import customLabels from '../../../assets/screenshots/custom-labels-setup.png';
+import initialFiles from '../../../assets/screenshots/app-builder-initial-files.png';
+
+The component is configured per Lightning record page through Lightning App Builder. Each instance is independent — you can place several copies on the same page, each with different settings.
+
+## Adding the component to a page
+
+1. Open the target record page (e.g., an Account record).
+2. Click the gear icon (Setup) → **Edit Page**.
+3. In the left component palette, find **Tucario Smarter Files** under *Custom — Managed*.
+4. Drag it onto the desired region of the page.
+5. Configure the properties in the right-hand panel.
+6. **Save** and **Activate** the page.
+
+<Image src={appBuilder} alt="Lightning App Builder with Smarter Files component selected and the properties panel open" />
+
+## Component properties
+
+Source of truth: `src/lwc/tucarioFilesWithDownloadAll/tucarioFilesWithDownloadAll.js-meta.xml`.
+
+The numbers in the first column match the red callouts on the screenshot above.
+
+| # | Property | Type | Default | Description |
+|---|---|---|---|---|
+| **1** | **Card Title** (`cardTitle`) | String | `Files` | Header text shown in the component card. Useful when placing multiple instances on the same page. |
+| **2** | **Storage Mode** (`storageMode`) | Picklist `Standard`, `Isolated` | `Standard` | `Standard` links files via native `ContentDocumentLink`. `Isolated` links files only through the junction object — files are hidden from the standard Files related list and unlock visibility controls (categories, private flag). |
+| **3** | **Excluded File Extensions** (`excludedFileExtensions`) | String | *(empty)* | Comma-separated denylist (e.g., `exe,bat,scr`). Listed extensions cannot be uploaded. |
+| **4** | **Initial Files Displayed** (`initialFilesDisplayed`) | Integer | `5` | Number of files shown before the "Show All" button appears. `0` or empty means show all. |
+| **5** | **Allowed File Extensions** (`allowedFileExtensions`) | String | *(empty)* | Comma-separated allowlist (e.g., `pdf,docx,png`). When set, only these extensions can be uploaded. Empty means no allowlist filter. |
+| **6** | **Max File Size (MB)** (`maxFileSize`) | Integer | `0` | Per-file upload size cap in megabytes. `0` means no limit. |
+| **7** | **Display Mode** (`displayMode`) | Picklist `List`, `Tiles` | `List` | `List` shows vertical rows with name/size/date. `Tiles` shows a responsive grid of cards with file-type icons. |
+| **8** | **Default Sort Order** (`defaultSortOrder`) | Picklist | `date-newest` | Initial sort applied when the page loads. Users can change it at runtime via the sort combobox above the file list. Allowed values: `date-newest`, `date-oldest`, `size-largest`, `size-smallest`, `name-az`, `name-za`. |
+
+<Image src={cardTitle} alt="Editing the Card Title property in App Builder to override the component header" />
+
+<Image src={initialFiles} alt="Initial Files Displayed property highlighted in App Builder properties panel" />
+
+### Extension format
+
+The parser is forgiving — leading dots are stripped, whitespace is trimmed, matching is case-insensitive. All of the following are equivalent inputs:
+
+```
+docx,exe,pdf
+.docx, .exe, .pdf
+DOCX , EXE , PDF
+.DOCX,  exe  ,  .Pdf
+```
+
+### How the Allowed (5) and Excluded (3) lists interact
+
+The validation runs client-side in `tucarioFilesWithDownloadAll.js` (`validateUploadedFiles`, lines 596–610) in two sequential checks. A file is uploaded only if it passes **both**:
+
+1. **Allowed check** — if **Allowed File Extensions** is set, the file's extension must be on that list. Files with no extension are blocked when an Allowed list is configured (no match is possible).
+2. **Excluded check** — if **Excluded File Extensions** is set, the file's extension must **not** be on that list.
+
+This produces the following behaviour:
+
+| Allowed (5) | Excluded (3) | File extension | Result |
+|---|---|---|---|
+| empty | empty | any | Allowed |
+| `pdf,docx` | empty | `pdf` | Allowed |
+| `pdf,docx` | empty | `exe` | Blocked (not in Allowed) |
+| empty | `exe,bat` | `exe` | Blocked (in Excluded) |
+| empty | `exe,bat` | `pdf` | Allowed |
+| `pdf,exe` | `exe,bat` | `exe` | **Blocked — Excluded wins** when an extension appears on both lists |
+| `pdf,docx` | `exe,bat` | *(no extension)* | Blocked (Allowed list configured, no match possible) |
+
+Practical takeaway: when you only need to block a few risky types, use **Excluded File Extensions** alone. When you need to enforce a strict whitelist, use **Allowed File Extensions** alone — adding an Excluded list on top is only useful if a subset of allowed extensions should still be denied (in which case Excluded takes precedence).
+
+:::tip
+In most cases, you only need one of the two. Use **Allowed** to restrict to a small set of known types. Use **Excluded** to block specific types but allow everything else.
+:::
+
+## Common configurations
+
+### Document-only library
+
+```
+Card Title:               Documents
+Storage Mode:             Standard
+Allowed File Extensions:  pdf,docx,doc,xlsx,xls,pptx,ppt
+Max File Size (MB):       25
+Display Mode:             List
+Default Sort Order:       date-newest
+```
+
+### Confidential file space (Isolated)
+
+```
+Card Title:               Confidential Documents
+Storage Mode:             Isolated
+Excluded File Extensions: exe,bat,scr,com
+Initial Files Displayed:  10
+Display Mode:             List
+Default Sort Order:       date-newest
+```
+
+### Image gallery (Tiles)
+
+```
+Card Title:               Images
+Storage Mode:             Standard
+Allowed File Extensions:  png,jpg,jpeg,gif,webp
+Display Mode:             Tiles
+Initial Files Displayed:  12
+```
+
+## Customizing displayed text
+
+Every user-facing string is a Salesforce Custom Label. To customize any text:
+
+1. Setup → **Custom Labels**.
+2. Filter by `Tucario` to find all relevant labels (`Tucario_Files_*`, `Tucario_Common_*`, `Tucario_Visibility_*`, `Tucario_Wizard_*`).
+3. Edit the label value, save, and refresh the page.
+
+<Image src={customLabels} alt="Custom Labels filtered by Tucario in Salesforce Setup" />
+
+See [Custom Labels](/features/custom-labels/) for translation tips.
+
+## Placement Tips
+
+- Works in the main content area, sidebar, or full-width regions of the record page.
+- Can be placed on any standard or custom object record page.
+- Multiple instances on the same page are supported — useful for splitting a record into different file spaces (e.g., one Standard-mode instance for general files and one Isolated-mode instance for confidential documents). Set distinct **Card Titles** to tell them apart.
+- The component is **record-page only**. The Configuration Wizard ships as a separate app page accessible from the *Smarter Files by Tucario* app launcher entry.

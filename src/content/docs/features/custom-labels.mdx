@@ -3,6 +3,9 @@ title: Custom Labels
 description: How to customize labels and text in Smarter Files.
 ---
 
+import { Image } from 'astro:assets';
+import customLabels from '../../../assets/screenshots/custom-labels-setup.png';
+
 ## Overview
 
 Every piece of user-facing text in the Smarter Files component is stored as a Salesforce Custom Label — about **98 labels** in total covering buttons, headers, modals, toasts, validation messages, and the Configuration Wizard. This lets you:
@@ -16,6 +19,8 @@ Every piece of user-facing text in the Smarter Files component is stored as a Sa
 1. Go to **Setup → Custom Labels** in Salesforce.
 2. Filter by namespace prefix `smarterfiles` (or search for `Tucario_`).
 3. Click a label to edit its value, or add translations under **Local Translations / Overrides** for additional languages.
+
+<Image src={customLabels} alt="Custom Labels filtered by Tucario in Salesforce Setup" />
 
 :::note
 Labels are namespaced under the `smarterfiles` package. The label *names* all start with `Tucario_` (the historical prefix preserved across releases).

@@ -16,10 +16,10 @@ Download every file attached to the record as a single ZIP archive. The **Downlo
 
 Smarter Files picks the right strategy based on total file size:
 
-- **Small batches (default: under ~50 MB total)** are zipped **client-side** in the browser using [JSZip](https://stuk.github.io/jszip/). The ZIP is generated and downloaded entirely on the user's machine — no server-side processing involved.
-- **Large batches** are zipped **server-side** by streaming files through the Salesforce file servlet. This bypasses the standard 12 MB Apex heap limit, so there is no practical size cap on the archive.
+- **Under 18 MB total** — [JSZip](https://stuk.github.io/jszip/) builds the archive in the browser. The ZIP is generated and downloaded entirely on the user's machine — no server-side processing involved.
+- **Over 18 MB** — the server builds the ZIP, bypassing Apex heap limits via the file servlet. There is no practical size cap on the archive.
 
-The user sees a single "Download All" button regardless of which path is taken; the component decides automatically.
+While the ZIP is being prepared, the Download All link is replaced with a small spinner. The user sees a single "Download All" button regardless of which path is taken; the component decides automatically.
 
 ## Visibility Filtering
 

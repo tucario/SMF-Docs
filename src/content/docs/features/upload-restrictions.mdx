@@ -3,9 +3,16 @@ title: Upload Restrictions
 description: Control which file types and sizes users can upload.
 ---
 
+import { Image } from 'astro:assets';
+import uploadFiles from '../../../assets/screenshots/upload-files.png';
+import uploadProgress from '../../../assets/screenshots/upload-progress.png';
+import uploadBlocked from '../../../assets/screenshots/upload-blocked.png';
+
 ## Overview
 
-Admins can restrict uploads by file type and size directly in the component properties — no code required.
+Admins can restrict uploads by file type and size directly in the component properties — no code required. Hint lines about allowed extensions and max size appear below the upload button when configured.
+
+<Image src={uploadFiles} alt="Upload area with hints about allowed extensions and max file size" />
 
 ## File Type Restrictions
 
@@ -26,7 +33,7 @@ When both are configured, they work as a combined filter:
 1. **Allowed list is checked first** — if the file's extension is not on the allowed list, it is blocked.
 2. **Excluded list is checked second** — if the file passed the allowed check but is on the excluded list, it is still blocked.
 
-A file must be on the allowed list **and** not on the excluded list to be accepted.
+A file must be on the allowed list **and** not on the excluded list to be accepted. See [Component Setup](/configuration/component-setup/#how-the-allowed-5-and-excluded-3-lists-interact) for the full truth table.
 
 :::tip
 In most cases, you only need one of the two. Use **Allowed** to restrict to a small set of known types. Use **Excluded** to block specific types but allow everything else.
@@ -42,8 +49,12 @@ When a user attempts to upload a file that exceeds the limit, the upload is bloc
 
 When uploads are blocked, the component provides clear feedback:
 
-![Upload blocked toast message](/docs/upload-blocked.png)
+<Image src={uploadBlocked} alt="Upload blocked toast naming the file and the reason" />
 
 - **Single file blocked** — toast message names the file and explains why it was blocked (wrong type or too large).
 - **Multiple files blocked** — toast lists all blocked files with the reason.
 - **Mixed upload** — if some files succeed and others are blocked, both a success and a warning toast are shown.
+
+Server-side validation runs after upload — files violating size or extension rules are rejected and a toast is shown even when the client-side check is bypassed.
+
+<Image src={uploadProgress} alt="Upload Files modal showing one of four files uploaded with progress bars" />

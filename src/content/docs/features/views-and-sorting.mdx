@@ -1,0 +1,68 @@
+---
+title: Views & Sorting
+description: List view, tile view, and sorting options in Smarter Files.
+---
+
+import { Image } from 'astro:assets';
+import anatomy from '../../../assets/screenshots/component-anatomy.png';
+import listView from '../../../assets/screenshots/list-view.png';
+import tileView from '../../../assets/screenshots/tile-view.png';
+import sortMenu from '../../../assets/screenshots/sort-menu.png';
+import emptyState from '../../../assets/screenshots/empty-state.png';
+import showAllToggle from '../../../assets/screenshots/show-all-toggle.png';
+
+## Anatomy of the component
+
+The card has three regions:
+
+1. **Header** — card title (configurable), file icon, and a `Download All` link on the right when at least one file is present.
+2. **Body** — the file list (or tile grid), with a sort combobox above the list.
+3. **Footer** — upload area with optional hint lines about allowed extensions and max size.
+
+<Image src={anatomy} alt="Smarter Files component with header, body, and footer regions called out" />
+
+## List View
+
+Each row shows: file-type icon, file name (clickable preview), formatted size, date, optional category label, and an action menu on the right. Private files display a small lock icon next to the name.
+
+<Image src={listView} alt="Smarter Files list view with two files and Download All Files link" />
+
+## Tile View
+
+Files are rendered as a responsive grid of cards. Each tile has a file-type icon, the file name, and the formatted size.
+
+<Image src={tileView} alt="Smarter Files tile view showing files as a responsive grid of cards" />
+
+The admin sets the **default** view via the **Display Mode** design property in App Builder (`List` or `Tiles`).
+
+## Sorting
+
+Above the file list there is a combobox (no visible label) that lets users re-sort at runtime. Sorting is performed client-side on the already-loaded list — no server round-trip.
+
+| Value | Behaviour |
+|---|---|
+| `date-newest` | Date Added (newest first) — default |
+| `date-oldest` | Date Added (oldest first) |
+| `size-largest` | Largest first (handy for surfacing real attachments above small signature images) |
+| `size-smallest` | Smallest first |
+| `name-az` | Name A → Z |
+| `name-za` | Name Z → A |
+
+<Image src={sortMenu} alt="Sort dropdown open showing the six sort options" />
+
+The admin sets the **default** via the **Default Sort Order** design property. Users can override at runtime — their choice persists for that record page during the session.
+
+## Show All toggle
+
+When **Initial Files Displayed** is greater than 0 and the record has more files than the limit, a "Show All" button appears below the list. Clicking it expands the view; clicking again collapses it.
+
+<Image src={showAllToggle} alt="File list collapsed to the initial display count with a Show All Files link below" />
+
+## Empty and access-denied states
+
+| State | Trigger |
+|---|---|
+| **Empty** | No files match the user's visibility — a friendly empty-state message is shown. |
+| **Missing Access** | The user lacks the Apex class access required to call `TucarioFileDownloadController` — a lock icon and a help message render in place of the file list. |
+
+<Image src={emptyState} alt="Smarter Files empty state with upload prompt" />

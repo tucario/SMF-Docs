@@ -9,8 +9,10 @@ import wizardDefine from '../../../assets/screenshots/wizard-define-types.png';
 import wizardDefineMultiple from '../../../assets/screenshots/wizard-define-types-multiple.png';
 import wizardRoles from '../../../assets/screenshots/wizard-assign-roles.png';
 import wizardReview from '../../../assets/screenshots/wizard-review-deploy.png';
-import wizardWelcome from '../../../assets/screenshots/wizard-welcome.png';
+import wizardDeploying from '../../../assets/screenshots/wizard-deploying.png';
+import appLauncher from '../../../assets/screenshots/app-launcher-search.png';
 import wizardHome from '../../../assets/screenshots/wizard-home.png';
+import wizardAuth from '../../../assets/screenshots/wizard-authorization.png';
 
 :::note
 Available in **AppExchange Edition** only. The component's **Storage Mode** must be set to **Isolated** for visibility controls to apply.
@@ -65,17 +67,23 @@ Users *without* the Manage Categories permission still see the **Set Category** 
 
 ## Configuring Visibility Rules
 
-Open the **Smarter Files by Tucario** app from the App Launcher. The Configuration Wizard opens on the home screen with two cards: *Manage Document Categories* and *Private Documents*.
+The Configuration Wizard is the admin UI for defining document categories and the role-based visibility rules that govern them. Open the **Smarter Files by Tucario** app from the App Launcher — the app's home tab is overridden to the Configuration Wizard FlexiPage.
 
-<Image src={wizardWelcome} alt="Configuration Wizard welcome screen" />
+<Image src={appLauncher} alt="App Launcher search returning the Smarter Files by Tucario app" />
 
 <Image src={wizardHome} alt="Configuration Wizard home with Manage Categories and Private Documents cards" />
 
 Click **Manage Document Categories** to enter the 3-step rule wizard.
 
-### Step 1 — Define Document Types
+### Authorization
 
-Add the document types you want to control. Each has a name and an optional description.
+Only users with the `Tucario_Manage_Categories` custom permission can use the wizard. Users without it see an "Unauthorized" message in place of the wizard body.
+
+<Image src={wizardAuth} alt="Wizard showing the Unauthorized message for users without Manage Categories" />
+
+### Step 1 — Document Types
+
+Define the categories. Each entry has a **Name** (required) and a **Description** (optional). Use **Add Document Type** to add rows; click the trash icon on a row to remove it.
 
 <Image src={wizardDefine} alt="Wizard step 1: defining a document type called Underwriting Documents" />
 
@@ -83,15 +91,25 @@ Add the document types you want to control. Each has a name and an optional desc
 
 ### Step 2 — Assign Roles
 
-For each document type, pick the roles allowed to see files in that category. The dual-listbox is populated from your org's role hierarchy (capped at 1000 roles).
+For each document type, pick which roles from your org's role hierarchy are allowed to see files in that category. The picker is a `lightning-dual-listbox` with **Available Roles** on the left and **Permitted Roles** on the right.
+
+If your org has no roles defined, the wizard displays an informational message instead of the picker.
 
 <Image src={wizardRoles} alt="Wizard step 2: dual listbox with available roles on the left and permitted roles on the right" />
 
 ### Step 3 — Review & Deploy
 
-Review active and deactivated categories, then click **Deploy Configuration**. The wizard calls `Metadata.Operations.enqueueDeployment()` to write the rules as `Tucario_Visibility_Rule__mdt` records asynchronously, polling for completion. A spinner shows progress.
+A summary of the configuration: each document type with its description and a comma-separated list of permitted roles. If you removed a category that was previously deployed, it appears under **Categories to Deactivate**.
+
+Clicking **Deploy Configuration** triggers `Metadata.Operations.enqueueDeployment()` to write the rules as `Tucario_Visibility_Rule__mdt` records asynchronously. While the deployment runs, a spinner appears next to the button. The wizard polls for completion via `TucarioDeployCallback`.
 
 <Image src={wizardReview} alt="Wizard step 3: review of all categories with the Deploy button" />
+
+<Image src={wizardDeploying} alt="Wizard showing the deployment progress spinner after clicking Deploy" />
+
+### How rules are stored
+
+Each category becomes a `Tucario_Visibility_Rule__mdt` record. Multiple rules referencing the same category combine permitted roles using OR logic — a user passes the category check if their role appears in **any** active rule for that category. If no active rule references a category, files in that category are open to everyone (default open).
 
 :::note
 **Removing a category:** removing a document type from the wizard and deploying does **not** delete the CMT record — it sets `Is_Active = false`. The Salesforce Metadata API doesn't support deleting CMT records from Apex, so deactivation is the closest equivalent. Deactivated categories no longer appear in the picker or filter files, and can be reactivated later by adding a category with the same name back.

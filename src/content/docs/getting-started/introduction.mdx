@@ -1,0 +1,48 @@
+---
+title: Introduction
+description: What is Smarter Files and why use it on Salesforce.
+---
+
+import { Image } from 'astro:assets';
+import storageModes from '../../../assets/screenshots/storage-modes-side-by-side.png';
+
+Smarter Files is a Lightning Web Component shipped as a managed 2GP package. It is dropped onto any record page through Lightning App Builder and replaces the native Files related list with a richer experience.
+
+## What it adds on top of native Files
+
+- **List and Tile views** with a per-page admin choice
+- **Bulk download** of all files attached to a record into a single ZIP archive
+- **Per-file action menu** — Download, Public Link, View Details, Edit Details, Delete, Remove from Record, plus visibility actions in Isolated mode
+- **Server-side upload restrictions** — allowed extensions and max file size per page
+- **Document visibility controls** — categories tied to roles, plus per-file privacy flags
+- **Configuration Wizard** — admin UI for defining categories and role mappings; deploys via the Metadata API
+
+## Two storage modes
+
+Each component instance runs in one of two modes (configured in App Builder):
+
+- **Standard** — files are linked to the record through the native `ContentDocumentLink`. The component behaves as a drop-in replacement for the standard Files related list.
+- **Isolated** — files are linked **only** through a custom junction object `Tucario_File_Visibility__c`. They are invisible to the standard Files related list, Chatter, and any other native UI that reads `ContentDocumentLink`. Visibility controls (categories, private flag) are available only in this mode.
+
+<Image src={storageModes} alt="Standard vs Isolated storage modes shown side by side" />
+
+## Architecture at a glance
+
+| Layer | Components |
+|---|---|
+| LWC | `tucarioFilesWithDownloadAll` (main), `tucarioConfigWizard`, `tucarioCategoryPicker`, `tucarioFileEditModal`, `tucarioLabels` |
+| Apex controllers | `TucarioFileDownloadController`, `TucarioVisibilityController` |
+| Apex batch | `TucarioMigrateFilesBatch` (Standard → Isolated migration) |
+| Apex callback | `TucarioDeployCallback` (Metadata API deployment status) |
+| Custom object | `Tucario_File_Visibility__c` (junction in Isolated mode) |
+| Custom Metadata Type | `Tucario_Visibility_Rule__mdt` (category → permitted roles) |
+| Custom permissions | `Tucario_Manage_Categories`, `Tucario_View_Private_Documents` |
+| Permission sets | `Tucario_Files`, `Tucario_Manage_Categories`, `Tucario_View_Private_Docs` |
+| App | `Smarter Files by Tucario` (with Configuration Wizard FlexiPage as Home tab override) |
+| Static resource | `TucarioJSZip` (3.10.1, used for client-side ZIP) |
+
+Files larger than 18 MB are streamed through a server-generated ZIP path; smaller files are bundled in the browser via JSZip. There is no hard size cap on individual files.
+
+## Where to Get It
+
+Install Smarter Files from the [AppExchange listing](https://appexchange.salesforce.com/appxListingDetail?listingId=620fba59-e740-4092-a0d1-5cd9b8ed8efd&other_source=AppExchange+Browse) — it ships as a 2GP managed package. See [Installation](/getting-started/installation/) for the full flow.
